@@ -1,15 +1,13 @@
 const db = require("../models");
-const Issue = db.issues;
+const Issue = db.issues; 
 const Comment = db.comments;
 
 
 exports.createIssue = (req, res) => {
     return Issue.create({
-        issue: req.body.issue,
-        user_id: req.body.user_id,
-        status: 0,
-        sent: 0,
-        categoryId: req.body.categoryId
+        userId: res.locals.loggedInUser.id,
+        categoryId: req.body.categoryId,
+        issue: req.body.issue
     })
         .then((issue) => {
             console.log(">> Created issue: " + JSON.stringify(issue, null, 4));

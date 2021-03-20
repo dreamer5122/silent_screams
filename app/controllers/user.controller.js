@@ -25,19 +25,18 @@ module.exports.signUp = async (req, res) => {
             password: hashedPassword
         });
 
-        return res.send({
+        return res.status(200).send({
             message: "created User",
             user: newUser
         });
 
-
     } catch(err) {
-        return res.send(err);
+        return res.status(500).send(err);
     }
 }
 
 module.exports.signIn = async (req, res) => {
-    try {
+    try { 
         const { userName, password } = req.body;
 
         const user = await User.findOne({
@@ -47,20 +46,21 @@ module.exports.signIn = async (req, res) => {
         });
 
         if(!user) {
-            return next(new Error("User Name does not exist"));
+            return res.status(401).send({
+                error: 'User Does Not Exist With this UserName'
+            })
         }
 
         const validPassword = await validatePassword(password, user.password);
-        console.log(validPassword);
         if(!validPassword) {
-            return res.send('incorrect credential');
-        } else {
-            console.log('cont');
+            return res.status(401).send({
+                error: "Incorrect Password"
+            })
         }
 
         const accessToken = jwt.sign({
             userId: user.id
-        }, "Secret Key",
+        }, "Secret Key",  
         {
             expiresIn: "1d"
         });
@@ -73,13 +73,11 @@ module.exports.signIn = async (req, res) => {
                 id: user.id
             }
         });
-        console.log(updated);
-        res.send({
-            user: accessToken,
+        // console.log(updated);
+        res.status(200).send({
+            token: accessToken,
             message: "success"
         });
-
-
     } catch(err) {
         return res.send(err);
     }

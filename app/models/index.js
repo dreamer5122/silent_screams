@@ -37,4 +37,12 @@ db.issues.belongsTo(db.categories, {
   as: "category"
 });
 
+db.users.hasMany(db.issues, {
+  as: "issues"
+});
+db.issues.belongsTo(db.users, {
+  foreignKey: "userId",
+  as: "user"
+})
+
 module.exports = db;

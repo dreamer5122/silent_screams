@@ -3,7 +3,7 @@ const { categories } = require('../models');
 module.exports = function(app) {
  
     const issues = require('../controllers/issue.controller');
-    const categories = require('../controllers/category.controller');
+    const categories = require('../controllers/category.controller'); 
  
     // Create a new Issue
     app.post('/api/issues', issues.createIssue);

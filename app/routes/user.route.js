@@ -4,3 +4,4 @@ module.exports = function (app) {
     app.post('/signUp', users.signUp);
     app.post('/signIn', users.signIn);
 }
+
