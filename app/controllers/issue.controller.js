@@ -7,17 +7,18 @@ exports.createIssue = (req, res) => {
     return Issue.create({
         userId: res.locals.loggedInUser.id,
         categoryId: req.body.categoryId,
-        issue: req.body.issue
+        issue: req.body.issue,
+        status: 0
     })
         .then((issue) => {
             console.log(">> Created issue: " + JSON.stringify(issue, null, 4));
-            return res.send({
-                message: "success",
+            return res.status(200).send({
+                message: "success",                    
                 issue: issue
             });
         })
         .catch((err) => {
-            res.send({
+            res.status(500).send({
                 message: ">> Error while creating issue: ",
                 error: err
             })
@@ -27,7 +28,7 @@ exports.createIssue = (req, res) => {
 exports.createComment = (req, res) => {
     return Comment.create({
         comment: req.body.comment,
-        user_id: req.body.user_id,
+        user_id: res.locals.loggedInUser.id,
         issueId: req.params.issueId,
         status: 1
     })
@@ -40,7 +41,7 @@ exports.createComment = (req, res) => {
                     issueId: comment.issueId
                 }
             })
-            res.send({
+            res.status(200).send({
                 message: ">> Created comment: ",
                 buttonId: buttonId,
                 telegramId: telegramId,
@@ -48,17 +49,22 @@ exports.createComment = (req, res) => {
             })
         })
         .catch((err) => {
-            res.send(err);
+            res.status(500).send(err);
         });
 };
 
 exports.findIssueById = (req, res) => {
     return Issue.findByPk(req.params.issueId, { include: ["comments", "category"] })
         .then((issue) => {
-            res.send(issue);
+            res.status(200).send({
+                issue: issue
+            });
         })
         .catch((err) => {
-            res.send(">> Error while finding issue: ");
+            res.status(500).send({
+                error: ">> Error while finding issue: ",
+                err: err
+            });
         });
 };
 
@@ -74,17 +80,17 @@ exports.findCommentById = (id) => {
 
 exports.findAll = (req, res) => {
     return Issue.findAll({
-        include: ["comments", "category"],
+        include: ["category"],
     }).then((issues) => {
         if(issues.length != 0) {
             res.send(issues);
         } else {
-            res.send({
+            res.status(204).send({
                 message: "no data"
-            })
+            });
         }
     }).catch(err => {
-        res.send({
+        res.status(500).send({
             message: 'failure',
             error: err
         });
@@ -98,8 +104,7 @@ exports.getApproved = async (req, res) => {
             "category"
         ],
         where: {
-            status: 1,
-            sent: 0
+            status: 1
         }
     });
 
@@ -114,32 +119,77 @@ exports.getApproved = async (req, res) => {
                     id: issue.id
                 }
             }).then(() => {
-                res.send(issue);
+                res.status(200).send({
+                    issue: issue
+                });
             }).catch(err => {
-                res.send(err);
+                res.status(500).send({
+                    error: err
+                });
             })
     } else {
-        res.send({
+        res.status(204).send({
             message: 'no data'
+        })
+    }
+};
+
+exports.myIssues = async (req, res) => {
+    try {
+        console.log('started');
+        const issues = await Issue.findAll({
+            include: [
+                "category"
+            ],
+            where: {
+                status: 1,
+                userId: res.locals.loggedInUser.id
+            }
+        });
+
+        if (issues.length != 0) {
+            // issue = issues[0];
+            // console.log(issue);
+            res.status(200).send({
+                message: "success",
+                issues: issues
+            })
+        } else {
+            console.log("no data")
+            res.status(204).send({
+                message: 'no data'
+            })
+        }
+    } catch (err) {
+        res.status(500).send({
+            error: err
         })
     }
 };
 
 exports.adminGetApproved = async (req, res) => {
-    const issues = await Issue.findAll({
-        where: {
-            status: 1,
+    try {
+        const issues = await Issue.findAll({
+            where: {
+                status: 1,
+            }
+        });
+        if (issues.length != 0) {
+          res.status(200).send({
+            issues: issues
+          });
+        } else {
+            res.status(204).send({
+                message: 'no data'
+            })
         }
-    });
-
-    if (issues.length != 0) {
-      res.send(issues);
-    } else {
-        res.send({
-            message: 'no data'
+    } catch(err) {
+        res.status(500).send({
+            error: err
         })
     }
 };
+
 
 exports.adminPendingIssues = async (req, res) => {
     const issues = await Issue.findAll({
@@ -152,9 +202,11 @@ exports.adminPendingIssues = async (req, res) => {
     });
 
     if (issues.length != 0) {
-      res.send(issues);
+      res.status(200).send({
+        issues: issues
+      });
     } else {
-        res.send({
+        res.status(204).send({
             message: 'no data'
         })
     }
@@ -172,9 +224,11 @@ exports.adminGetDeclined = async (req, res) => {
     });
 
     if (issues.length != 0) {
-      res.send(issues);
+      res.status(200).send({
+        issues: issues
+      });
     } else {
-        res.send({
+        res.status(204).send({
             message: 'no data'
         })
     }
@@ -189,9 +243,11 @@ exports.deleteIssue = (req, res) => {
             id: id
         }
     }).then(() => {
-        res.status(200).send('deleted an issue successfully with id = ' + id);
+        res.status(200).send({
+            message: 'deleted an issue successfully with id = ' + id
+        });
     }).catch(err => {
-        res.send({
+        res.status(500).send({
             message: 'failure',
             erorr: err
         })
@@ -234,9 +290,11 @@ exports.approveIssue = (req, res) => {
             }
         }
     ).then(() => {
-        res.status(200).send('approved an issue successfully with id = ' + id);
+        res.status(200).send({
+            message: 'approved an issue successfully with id = ' + id
+        });
     }).catch(err => {
-        res.send({
+        res.status(500).send({
             message: 'failure',
             erorr: err
         })
@@ -245,7 +303,7 @@ exports.approveIssue = (req, res) => {
 
 exports.declineIssue = (req, res) => {
     const id = req.params.issueId;
-    Issue.update({
+        Issue.update({
         user_id: req.body.user_id,
         issue: req.body.issue,
         status: 3
@@ -257,9 +315,11 @@ exports.declineIssue = (req, res) => {
             }
         }
     ).then(() => {
-        res.status(200).send('decline an issue successfully with id = ' + id);
+        res.status(200).send({
+            message: 'decline an issue successfully with id = ' + id,
+        });
     }).catch(err => {
-        res.send({
+        res.status(500).send({
             message: 'failure',
             erorr: err
         })

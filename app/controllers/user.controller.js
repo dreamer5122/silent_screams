@@ -12,6 +12,21 @@ async function validatePassword(plainPassword, hashedPassword) {
     return await bcrypt.compare(plainPassword, hashedPassword);
 }
 
+module.exports.allowIfLoggedIn = async (req, res, next) => {
+    try {
+        const user = res.locals.loggedInUser;
+        if(!user) {
+            res.status(401).json({
+                error: "You must login first"
+            })
+        }
+        req.user = user;
+        next();
+    } catch(error) {
+        next(error);
+    }
+}
+
 
 module.exports.signUp = async (req, res) => {
     try {
@@ -31,7 +46,9 @@ module.exports.signUp = async (req, res) => {
         });
 
     } catch(err) {
-        return res.status(500).send(err);
+        return res.status(500).send({
+            error: err
+        });
     }
 }
 
@@ -79,6 +96,8 @@ module.exports.signIn = async (req, res) => {
             message: "success"
         });
     } catch(err) {
-        return res.send(err);
+        return res.status(500).send({
+            error: err
+        });
     }
 }

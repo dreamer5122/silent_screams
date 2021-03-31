@@ -1,5 +1,5 @@
 const db = require("../models");
-const Issue = db.issues;
+// const Issue = db.issues;
 const Category = db.categories;
 
 module.exports.createCategory = (req, res) => {
